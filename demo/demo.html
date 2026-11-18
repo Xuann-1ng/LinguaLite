@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>轻译 · 自测页面</title>
+    <link rel="stylesheet" href="../content.css" />
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        font: 16px/1.75 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #1c2430;
+        background: #fff;
+      }
+      .wrap { max-width: 680px; margin: 40px auto 120px; padding: 0 24px; }
+      .site {
+        display: flex; align-items: center; gap: 10px; font-size: 13px; color: #7b8794;
+        border-bottom: 1px solid #eef1f6; padding-bottom: 14px; margin-bottom: 28px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #1f6feb; }
+      h1 { font-size: 28px; line-height: 1.35; margin: 0 0 10px; letter-spacing: -0.2px; }
+      .meta { font-size: 13px; color: #8b95a1; margin-bottom: 26px; }
+      h2 { font-size: 19px; margin: 32px 0 10px; }
+      p { margin: 0 0 18px; }
+      ul { margin: 0 0 18px; padding-left: 22px; }
+      li { margin-bottom: 8px; }
+      .note { background: #f6f8fc; border: 1px solid #e6ecf5; border-radius: 10px; padding: 12px 16px; font-size: 14px; color: #4a5666; }
+      .tip { position: fixed; right: 16px; bottom: 16px; font-size: 12px; color: #97a2b0; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="site"><span class="dot"></span>lingualite.demo · 自测与截图页</div>
+      <article id="article">
+        <h1>Why the built-in translation in Chrome feels broken</h1>
+        <div class="meta">Demo article · 5 min read</div>
+      </article>
+    </div>
+
+    <script>
+      /* ---------- 演示内容：英文原文 + 对应中文译文（用于 mock 翻译通道） ---------- */
+      const BLOCKS = [
+        ['p', "Every time I open an English page, Chrome offers to translate it. I accept, and the page turns into something I can no longer read comfortably: the layout jumps, the original text disappears, and there is no obvious way back."],
+        ['p', "Worse, the translation bar sits on top of the page for a while and then vanishes. If you want to check a single sentence against the original, you have to turn the whole page back and forth."],
+        ['h2', "What is actually missing"],
+        ['ul', [
+          "Select a word or a sentence and get the meaning right there, without leaving the page.",
+          "Keep the original paragraph visible, so you can compare the two versions side by side.",
+          "Translate a page and restore it in one click, without reloading."
+        ]],
+        ['p', "That is the whole idea behind LinguaLite: translating should feel like turning on a light, not like changing the language of your browser."],
+        ['p', "The extension runs entirely in your browser. Text is sent to a free translation endpoint, the result comes back in a few hundred milliseconds, and the page keeps its original structure."]
+      ];
+
+      const ZH = {
+        "Why the built-in translation in Chrome feels broken": "为什么 Chrome 自带的翻译用起来这么别扭",
+        "Demo article · 5 min read": "示例文章 · 约 5 分钟读完",
+        "Every time I open an English page, Chrome offers to translate it. I accept, and the page turns into something I can no longer read comfortably: the layout jumps, the original text disappears, and there is no obvious way back.":
+          "每次打开英文页面，Chrome 都会提示是否翻译。我点了同意，页面就变成了一种我读起来并不舒服的样子：版式会跳，原文消失了，而且找不到明显的方式退回。",
+        "Worse, the translation bar sits on top of the page for a while and then vanishes. If you want to check a single sentence against the original, you have to turn the whole page back and forth.":
+          "更糟的是，那条翻译提示条在页面上停留一会儿就消失了。如果你想拿某一句话和原文对照，只能把整页反复翻来翻去。",
+        "What is actually missing": "到底缺了什么",
+        "Select a word or a sentence and get the meaning right there, without leaving the page.":
+          "选中一个词或一句话，就地给出释义，不用离开当前页面。",
+        "Keep the original paragraph visible, so you can compare the two versions side by side.":
+          "保留原文段落，让两个版本可以并排对照。",
+        "Translate a page and restore it in one click, without reloading.":
+          "一键翻译整页，一键还原，不用重新加载页面。",
+        "That is the whole idea behind LinguaLite: translating should feel like turning on a light, not like changing the language of your browser.":
+          "这就是轻译的全部想法：翻译应该像开一盏灯那样自然，而不是去改浏览器本身的语​​言。",
+        "The extension runs entirely in your browser. Text is sent to a free translation endpoint, the result comes back in a few hundred milliseconds, and the page keeps its original structure.":
+          "插件完全在你的浏览器里运行。文本会发往免费的翻译通道，几百毫秒就能返回结果，页面结构保持原样。"
+      };
+
+      /* ---------- 渲染演示文章 ---------- */
+      const art = document.getElementById('article');
+      BLOCKS.forEach(([tag, content]) => {
+        if (tag === 'ul') {
+          const ul = document.createElement('ul');
+          content.forEach((t) => {
+            const li = document.createElement('li');
+            li.textContent = t;
+            ul.appendChild(li);
+          });
+          art.appendChild(ul);
+        } else {
+          const el = document.createElement(tag);
+          el.textContent = content;
+          art.appendChild(el);
+        }
+      });
+
+      /* ---------- 模拟扩展环境（只在自测页生效） ---------- */
+      const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
+      const mockTranslate = (text) =>
+        ZH[norm(text)] || ZH[text] || '（模拟译文）' + norm(text).slice(0, 24) + '…';
+
+      const msgListeners = [];
+      const changeListeners = [];
+      const noBubble = location.hash.indexOf('nobubble') >= 0;
+      const store = noBubble ? { showBubble: false } : {};
+      window.chrome = {
+        runtime: {
+          lastError: null,
+          onMessage: {
+            addListener: (fn) => msgListeners.push(fn)
+          },
+          sendMessage: (msg, cb) => {
+            setTimeout(() => {
+              if (msg.type === 'translate') {
+                cb({ ok: true, results: msg.texts.map(mockTranslate) });
+              } else {
+                cb({ ok: true });
+              }
+            }, 180);
+          }
+        },
+        storage: {
+          local: {
+            get: (d, cb) => cb(Object.assign({}, d, store)),
+            set: (patch) => {
+              Object.assign(store, patch);
+              const changes = {};
+              Object.keys(patch).forEach((k) => (changes[k] = { newValue: patch[k] }));
+              changeListeners.forEach((fn) => fn(changes, 'local'));
+            }
+          },
+          onChanged: { addListener: (fn) => changeListeners.push(fn) }
+        }
+      };
+      window.__lltToggle = () =>
+        new Promise((resolve) => msgListeners.forEach((fn) => fn({ type: 'togglePage' }, {}, resolve)));
+      window.__lltMsg = (msg) =>
+        new Promise((resolve) => msgListeners.forEach((fn) => fn(msg, {}, resolve)));
+
+      /* 模拟在面板里改设置：直接走 storage.local.set -> onChanged 这条真实链路 */
+      window.__lltSet = (patch) => window.chrome.storage.local.set(patch);
+
+      /* ---------- 自测场景：#bubble / #card / #page / #dark ---------- */
+      function selectSentence() {
+        const p = document.querySelectorAll('#article p')[0];
+        const range = document.createRange();
+        range.selectNodeContents(p);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        return p.getBoundingClientRect();
+      }
+
+      async function run() {
+        const hash = location.hash.replace('#', '');
+        if (!hash) return;
+
+        // #toggle：先开着气泡选一次，再「在面板里关掉」，然后重新划词看气泡是否消失
+        if (hash === 'toggle') {
+          const bubbleShown = async () => {
+            const host = document.getElementById('llt-host-9f3b');
+            return !!(host && host.shadowRoot && !host.shadowRoot.querySelector('.bubble').hidden);
+          };
+          const reselect = async () => {
+            selectSentence();
+            document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 300, clientY: 220 }));
+            await new Promise((r) => setTimeout(r, 300));
+          };
+
+          await reselect();
+          const before = await bubbleShown();
+          window.__lltSet({ showBubble: false });
+          await new Promise((r) => setTimeout(r, 120));
+          await reselect();
+          const after = await bubbleShown();
+
+          const verdict = before && !after ? 'PASS' : 'FAIL';
+          const badge = document.createElement('div');
+          badge.style.cssText =
+            'position:fixed;left:12px;bottom:12px;padding:6px 12px;border-radius:8px;font:12px/1.5 monospace;' +
+            'color:#fff;background:' + (verdict === 'PASS' ? '#1a7f4b' : '#c0392b');
+          badge.textContent =
+            verdict + ' · 关之前出现气泡=' + before + '，关之后出现气泡=' + after;
+          document.body.appendChild(badge);
+          document.title = verdict.toLowerCase();
+          return;
+        }
+
+        // #takeover：模拟「页面里跑着旧版脚本」，再重新注入一次，应当接管且只留一个气泡
+        if (hash === 'takeover') {
+          const bubbleShown = async () => {
+            const host = document.getElementById('llt-host-9f3b');
+            return !!(host && host.shadowRoot && !host.shadowRoot.querySelector('.bubble').hidden);
+          };
+          const reselect = async () => {
+            selectSentence();
+            document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 300, clientY: 220 }));
+            await new Promise((r) => setTimeout(r, 300));
+          };
+
+          await reselect();
+          const hostBefore = document.querySelectorAll('#llt-host-9f3b').length;
+
+          window.__lltVersion = '1.0.0'; // 假装自己是旧版本
+          await new Promise((res) => {
+            const s = document.createElement('script');
+            s.src = '../content.js';
+            s.onload = res;
+            document.body.appendChild(s);
+          });
+          await reselect();
+          const hostAfter = document.querySelectorAll('#llt-host-9f3b').length;
+          const shown = await bubbleShown();
+
+          const ok = hostBefore === 1 && hostAfter === 1 && shown;
+          const badge = document.createElement('div');
+          badge.style.cssText =
+            'position:fixed;left:12px;bottom:12px;padding:6px 12px;border-radius:8px;font:12px/1.5 monospace;' +
+            'color:#fff;background:' + (ok ? '#1a7f4b' : '#c0392b');
+          badge.textContent =
+            (ok ? 'PASS' : 'FAIL') +
+            ' · 重新注入前后 host 数量=' + hostBefore + '→' + hostAfter + '，气泡可用=' + shown;
+          document.body.appendChild(badge);
+          document.title = ok ? 'pass' : 'fail';
+          return;
+        }
+
+        // #blocks：模拟选中「第 2 段 + 小标题」，右键局部双语对照，只给这两段加译文
+        if (hash === 'blocks') {
+          const art = document.getElementById('article');
+          const ps = art.querySelectorAll('p');
+          const h2 = art.querySelector('h2');
+          const pick = () => {
+            const r = document.createRange();
+            r.setStart(ps[1], 0);
+            r.setEnd(h2, h2.childNodes.length);
+            const s = getSelection();
+            s.removeAllRanges();
+            s.addRange(r);
+          };
+
+          pick();
+          const first = await window.__lltMsg({ type: 'translateBlocks' });
+          await new Promise((r) => setTimeout(r, 400));
+          const owners = [...document.querySelectorAll('.llt-tr')].map(
+            (n) => n.parentElement.tagName + (n.parentElement === ps[1] ? '(第2段)' : '')
+          );
+
+          // 再执行一次应当还原
+          pick();
+          await window.__lltMsg({ type: 'translateBlocks' });
+          await new Promise((r) => setTimeout(r, 250));
+          const afterRestore = document.querySelectorAll('.llt-tr').length;
+
+          // 再翻一次，留下可视状态供截图
+          pick();
+          await window.__lltMsg({ type: 'translateBlocks' });
+          await new Promise((r) => setTimeout(r, 400));
+
+          const ok =
+            first.count === 2 && afterRestore === 0 && document.querySelectorAll('.llt-tr').length === 2;
+          const badge = document.createElement('div');
+          badge.style.cssText =
+            'position:fixed;left:12px;bottom:12px;padding:6px 12px;border-radius:8px;font:12px/1.5 monospace;' +
+            'color:#fff;background:' + (ok ? '#1a7f4b' : '#c0392b');
+          badge.textContent =
+            (ok ? 'PASS' : 'FAIL') +
+            ' · 翻译 ' + first.count + ' 段(' + owners.join(',') + ')，还原后剩 ' + afterRestore + ' 条';
+          document.body.appendChild(badge);
+          document.title = ok ? 'pass' : 'fail';
+          return;
+        }
+
+        selectSentence();
+        document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 300, clientY: 220 }));
+        await new Promise((r) => setTimeout(r, 260));
+
+        if (hash === 'card' || hash === 'page') {
+          const host = document.getElementById('llt-host-9f3b');
+          const bubble = host && host.shadowRoot.querySelector('.bubble');
+          if (bubble) bubble.click();
+          await new Promise((r) => setTimeout(r, 500));
+          window.getSelection().removeAllRanges();
+        }
+        if (hash === 'page') {
+          const host = document.getElementById('llt-host-9f3b');
+          host && host.shadowRoot.querySelector('.card').classList.remove('show');
+          await window.__lltToggle();
+          await new Promise((r) => setTimeout(r, 900));
+        }
+        document.title = 'ready-' + hash;
+      }
+
+      window.addEventListener('load', () => {
+        const lang = document.createElement('script');
+        lang.src = '../lang.js';
+        lang.onload = () => {
+          const s = document.createElement('script');
+          s.src = '../content.js';
+          s.onload = run;
+          document.body.appendChild(s);
+        };
+        document.body.appendChild(lang);
+      });
+    </script>
+  </body>
+</html>

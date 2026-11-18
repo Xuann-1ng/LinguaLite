@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "轻译 LinguaLite — 划词 & 双语网页翻译",
+  "version": "1.4.0",
+  "description": "轻量免费的翻译插件：中文自动译英文、英文自动译中文，划词即译，一键整页双语对照，无需 API Key。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage", "contextMenus", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "轻译 LinguaLite",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lang.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "toggle-page": {
+      "suggested_key": { "default": "Alt+T" },
+      "description": "整页双语翻译 / 还原原文"
+    }
+  }
+}

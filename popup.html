@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>轻译 LinguaLite</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span class="logo"></span>
+      <span class="ttl">轻译<em>LinguaLite</em></span>
+      <span class="badge">免 Key</span>
+    </header>
+
+    <div id="bar" class="bar" hidden>
+      <span id="barTxt">此页面仍在用旧版本</span>
+      <button id="reloadBtn">刷新页面</button>
+    </div>
+
+    <section class="panel">
+      <textarea id="src" rows="4" spellcheck="false" placeholder="粘贴或输入要翻译的文字…（中→英 / 英→中 自动识别，Ctrl+Enter 翻译）"></textarea>
+      <div id="detect" class="detect" hidden>
+        <span class="tag">自动识别</span>
+        <span class="from" id="detectFrom">中文</span>
+        <span class="arw">→</span>
+        <span class="dst" id="detectTo">English</span>
+      </div>
+      <div class="row">
+        <label class="field">
+          <span>目标</span>
+          <select id="to">
+            <option value="auto">自动（中↔英）</option>
+            <option value="zh-Hans">简体中文</option>
+            <option value="zh-Hant">繁體中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="es">Español</option>
+            <option value="ru">Русский</option>
+            <option value="pt">Português</option>
+            <option value="it">Italiano</option>
+            <option value="ar">العربية</option>
+            <option value="th">ไทย</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="tr">Türkçe</option>
+            <option value="id">Indonesia</option>
+            <option value="hi">हिन्दी</option>
+            <option value="nl">Nederlands</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>通道</span>
+          <select id="engine">
+            <option value="auto">自动</option>
+            <option value="edge">微软</option>
+            <option value="tencent">腾讯</option>
+            <option value="google">谷歌</option>
+          </select>
+        </label>
+        <button id="go" class="primary">翻译</button>
+      </div>
+      <div id="out" class="out" hidden>
+        <div class="out-txt"></div>
+        <button id="copy" class="mini">复制</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="line">
+        <div class="txt">
+          <div class="k">整页双语对照</div>
+          <div class="sub">译文插在每段原文下方，可随时还原</div>
+        </div>
+        <button id="pageBtn" class="ghost">翻译本页</button>
+      </div>
+      <div class="line" id="bubbleLine">
+        <div class="txt">
+          <div class="k">划词显示「译」按钮</div>
+          <div class="sub" id="bubbleSub">关掉后不挡正文，改用右键菜单</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showBubble" />
+          <i></i>
+        </label>
+      </div>
+      <div class="line">
+        <div class="txt">
+          <div class="k">划词自动翻译</div>
+          <div class="sub" id="autoSub">关闭时：选中后点蓝色「译」按钮</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoSel" />
+          <i></i>
+        </label>
+      </div>
+    </section>
+
+    <footer>
+      <kbd>Alt</kbd>&nbsp;+&nbsp;<kbd>T</kbd> 整页翻译　<kbd>Esc</kbd> 关卡片　右键：双语对照翻译（有选区译选区，没选区译整页）
+    </footer>
+
+    <script src="lang.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

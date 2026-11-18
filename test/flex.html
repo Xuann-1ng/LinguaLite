@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>轻译 · 布局回归（flex 行 / 网格 / 徽标）</title>
+    <link rel="stylesheet" href="../content.css" />
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #1f2328;
+        background: #fff;
+      }
+      .layout { display: flex; gap: 28px; max-width: 1040px; margin: 20px auto 80px; padding: 0 16px; }
+      .side { width: 220px; flex: none; }
+      .side ul { list-style: none; margin: 0; padding: 0; }
+      .side li { margin: 1px 0; }
+      /* 模仿 GitHub 仓库左侧导航：a 是 flex 行，固定 32px 高，图标 + 标签 + 计数 */
+      .side a {
+        display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px;
+        border-radius: 6px; color: #1f2328; text-decoration: none;
+      }
+      .side a:hover { background: #f6f8fa; }
+      .ic { width: 16px; height: 16px; border-radius: 4px; background: #d0d7de; flex: none; }
+      .Counter {
+        margin-left: auto; font-size: 12px; line-height: 18px; padding: 0 6px; min-width: 20px;
+        text-align: center; border-radius: 999px; background: rgba(31, 35, 40, 0.08); color: #1f2328;
+      }
+
+      .main { flex: 1; min-width: 0; }
+      /* 模仿 UnderlineNav：flex 行 + 固定高度 */
+      .UnderlineNav { display: flex; gap: 8px; border-bottom: 1px solid #d0d7de; margin-bottom: 18px; }
+      .UnderlineNav a {
+        display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 8px;
+        border-bottom: 2px solid transparent; color: #1f2328; text-decoration: none;
+      }
+      .UnderlineNav a.on { border-bottom-color: #fd8c73; font-weight: 600; }
+
+      /* 发布徽标那一行：flex 行 + 小胶囊 */
+      .release-row { display: flex; align-items: center; gap: 8px; min-height: 28px; margin: 6px 0 14px; }
+      .Label {
+        font-size: 12px; line-height: 18px; padding: 0 7px; border: 1px solid #1f883d;
+        border-radius: 999px; color: #1f883d; flex: none;
+      }
+      .muted { color: #59636e; font-size: 12px; }
+
+      /* 网格卡片：正文在 grid 里 */
+      .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+      .card { border: 1px solid #d0d7de; border-radius: 8px; padding: 10px 12px; }
+      .card h3 { font-size: 14px; margin: 0 0 4px; }
+      .card p { margin: 0; color: #59636e; }
+
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 8px 6px; border-top: 1px solid #d0d7de; vertical-align: top; }
+      td.f { font-weight: 600; }
+      h1 { font-size: 24px; margin: 0 0 6px; }
+      p { margin: 0 0 14px; }
+      .clamp {
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        height: 42px; margin: 0 0 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="side" aria-label="Repository">
+        <ul id="repoNav">
+          <li><a href="#"><i class="ic"></i><span>Code</span><span class="Counter">13</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Issues</span><span class="Counter">128</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Pull requests</span><span class="Counter">42</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Discussions</span><span class="Counter">7</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Actions</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Projects</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Security</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Insights</span></a></li>
+          <li><a href="#"><i class="ic"></i><span>Settings</span></a></li>
+        </ul>
+      </nav>
+
+      <main class="main">
+        <h1>OpenSynapse</h1>
+        <p class="desc">A lightweight Windows 11 controller for Razer devices, written in C# with no background services.</p>
+
+        <nav class="UnderlineNav" aria-label="Code">
+          <a href="#" class="on"><i class="ic"></i><span>Code</span><span class="Counter">13</span></a>
+          <a href="#"><i class="ic"></i><span>Branches</span><span class="Counter">3</span></a>
+          <a href="#"><i class="ic"></i><span>Tags</span><span class="Counter">1</span></a>
+        </nav>
+
+        <!-- 发布徽标行：普通 div（不是 nav），以前译文会被塞进这一行 -->
+        <div class="release-row" id="releaseRow">
+          <strong>OpenSynapse v0.1.2</strong>
+          <span class="Label" id="latestBadge">Latest</span>
+          <span class="muted" id="releaseDate">27 minutes ago</span>
+        </div>
+
+        <!-- 网格卡片 -->
+        <div class="cards" id="cards">
+          <div class="card"><h3>Files</h3><p>Folders and shortcuts, grouped the way you use them.</p></div>
+          <div class="card"><h3>Device control</h3><p>DPI, polling rate and lighting from one panel.</p></div>
+        </div>
+
+        <!-- 被截断的标题：译文不能跟着被裁掉 -->
+        <div class="clamp" id="clamp">
+          A lightweight Windows 11 controller for Razer devices, built to replace the vendor software without running any background services at all.
+        </div>
+
+        <table id="files">
+          <tbody>
+            <tr><td class="f">src</td><td>Move the tray icon and the device list into separate folders.</td></tr>
+            <tr><td class="f">docs</td><td>Add screenshots of the lighting panel to the readme.</td></tr>
+            <tr><td class="f">README.md</td><td>Explain how to run the app without installing anything.</td></tr>
+          </tbody>
+        </table>
+
+        <p id="tail">Every string in this page is written in English on purpose, so the extension has something real to translate.</p>
+      </main>
+    </div>
+
+    <script>
+      /* ---------- 假扩展环境（译文固定，只测排版，不走网络） ---------- */
+      const ZH = {
+        OpenSynapse: 'OpenSynapse 控制器',
+        'A lightweight Windows 11 controller for Razer devices, written in C# with no background services.':
+          '一个为雷蛇设备写的轻量 Windows 11 控制器，用 C# 实现，不常驻任何后台服务。',
+        'OpenSynapse v0.1.2': 'OpenSynapse 版本 0.1.2',
+        Latest: '最新',
+        '27 minutes ago': '27 分钟前',
+        Files: '文件',
+        'Folders and shortcuts, grouped the way you use them.': '文件夹与快捷方式，按你的使用习惯分组。',
+        'Device control': '设备控制',
+        'DPI, polling rate and lighting from one panel.': 'DPI、回报率与灯效，一个面板全搞定。',
+        'A lightweight Windows 11 controller for Razer devices, built to replace the vendor software without running any background services at all.':
+          '一个轻量的 Windows 11 雷蛇设备控制器，用来替代厂商软件，而且完全不常驻后台服务。',
+        Code: '代码', Issues: '问题', 'Pull requests': '拉取请求', Discussions: '讨论', Actions: '操作',
+        Projects: '项目', Security: '安全', Insights: '洞察', Settings: '设置', Branches: '分支', Tags: '标签',
+        src: '源码目录',
+        'Move the tray icon and the device list into separate folders.': '把托盘图标和设备列表拆到各自的文件夹里。',
+        docs: '文档',
+        'Add screenshots of the lighting panel to the readme.': '在 readme 里补上灯效面板的截图。',
+        'README.md': 'README.md（说明文件）',
+        'Explain how to run the app without installing anything.': '说明如何在不安装任何东西的情况下运行程序。',
+        'Every string in this page is written in English on purpose, so the extension has something real to translate.':
+          '这一页每一句都故意写成英文，好让插件有真实的东西可翻。'
+      };
+      const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
+      const mockTranslate = (t) => ZH[norm(t)] || '（译文）' + norm(t).slice(0, 18) + '…';
+
+      const msgListeners = [];
+      const changeListeners = [];
+      window.chrome = {
+        runtime: {
+          lastError: null,
+          onMessage: { addListener: (fn) => msgListeners.push(fn) },
+          sendMessage: (msg, cb) => {
+            setTimeout(() => {
+              cb(msg.type === 'translate' ? { ok: true, results: msg.texts.map(mockTranslate) } : { ok: true });
+            }, 60);
+          }
+        },
+        storage: {
+          local: { get: (d, cb) => cb(Object.assign({}, d)), set: () => {} },
+          onChanged: { addListener: (fn) => changeListeners.push(fn) }
+        }
+      };
+      window.__lltToggle = () =>
+        new Promise((resolve) => msgListeners.forEach((fn) => fn({ type: 'togglePage' }, {}, resolve)));
+      window.__lltMsg = (msg) =>
+        new Promise((resolve) => msgListeners.forEach((fn) => fn(msg, {}, resolve)));
+
+      /* ---------- 审计：译文块是否压到了别的文字 ---------- */
+      window.__lltAudit = function () {
+        const trs = [...document.querySelectorAll('.llt-tr')];
+        const hit = (a, b) =>
+          a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+        const ownText = (el) => {
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('.llt-tr').forEach((n) => n.remove());
+          return norm(clone.textContent || '');
+        };
+        const overlaps = [];
+        for (const tr of trs) {
+          const r = tr.getBoundingClientRect();
+          const all = document.querySelectorAll('body *');
+          for (const el of all) {
+            if (el === tr || el.contains(tr) || tr.contains(el)) continue;
+            if (el.id === 'llt-host-9f3b') continue;
+            if (el.closest('#llt-host-9f3b')) continue;
+            const t = ownText(el);
+            if (!t) continue;
+            const er = el.getBoundingClientRect();
+            if (!er.width || !er.height) continue;
+            if (hit(r, er)) {
+              overlaps.push({ tr: tr.textContent.slice(0, 16), other: t.slice(0, 20), tag: el.tagName });
+              break;
+            }
+          }
+        }
+        const inside = (sel) => [...document.querySelectorAll(sel)].some((n) => n.querySelector('.llt-tr'));
+        const navLabel = document.querySelector('#repoNav a span');
+        const tabLabel = document.querySelector('.UnderlineNav a span');
+        const info = {
+          total: trs.length,
+          overlaps,
+          navUntouched: !inside('#repoNav') && !inside('.UnderlineNav'),
+          navRowHeight: Math.round(document.querySelector('#repoNav a').getBoundingClientRect().height),
+          tabRowHeight: Math.round(document.querySelector('.UnderlineNav a').getBoundingClientRect().height),
+          badgeHeight: Math.round(document.getElementById('latestBadge').getBoundingClientRect().height),
+          // 译文应该落在徽标行「下面」：紧跟在行后，只有一条（整行算一段，不能拆成三份）
+          badgeBelow: (() => {
+            const row = document.getElementById('releaseRow');
+            const next = row.nextElementSibling;
+            if (!next || !next.classList.contains('llt-tr')) return null;
+            const extra = [...document.querySelectorAll('.llt-tr')].filter(
+              (n) => n.previousElementSibling === row || (n.previousElementSibling && n.previousElementSibling.classList.contains('llt-tr'))
+            ).length;
+            return { gap: Math.round(next.getBoundingClientRect().top - row.getBoundingClientRect().bottom), stacked: extra };
+          })(),
+          clampTextVisible: (() => {
+            const box = document.getElementById('clamp').getBoundingClientRect();
+            const tr = document.querySelectorAll('.llt-tr');
+            for (const n of tr) {
+              const r = n.getBoundingClientRect();
+              if (r.top >= box.top - 2 && r.top <= box.bottom + 2) return false;
+            }
+            return true;
+          })()
+        };
+        return info;
+      };
+      /* ---------- 局部双语对照：选中一段 → 只给这一段加译文，再来一次还原 ---------- */
+      window.__lltBlocks = async function () {
+        const cell = document.querySelector('#files td:nth-child(2)');
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        const first = await window.__lltMsg({ type: 'translateBlocks' });
+        const inCell = cell.querySelectorAll('.llt-tr').length;
+        const total = document.querySelectorAll('.llt-tr').length;
+        const again = await window.__lltMsg({ type: 'translateBlocks' });
+        const after = document.querySelectorAll('.llt-tr').length;
+        return { first: first && first.count, inCell, total, afterRestore: after, again: again && again.count };
+      };
+      window.__lltReady = true;
+    </script>
+    <script src="../lang.js"></script>
+    <script src="../content.js"></script>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>e2e</title>
+    <style>
+      body { font: 16px/1.7 -apple-system, "Segoe UI", sans-serif; margin: 60px auto; max-width: 620px; color: #1b2430; }
+      p { margin: 0 0 18px; }
+      #log { margin-top: 28px; font: 12px/1.6 ui-monospace, Consolas, monospace; color: #6b7785; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <p id="src">
+      The extension keeps the original paragraph on the page and inserts the translation right below it, so nothing is lost and nothing has to be switched back.
+    </p>
+    <p>Second paragraph, used to verify batch translation of several blocks at once.</p>
+    <div id="log">waiting…</div>
+
+    <script>
+      const log = (s) => (document.getElementById('log').textContent += '\n' + s);
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      (async () => {
+        await sleep(600);
+        const p = document.getElementById('src');
+        const r = document.createRange();
+        r.selectNodeContents(p);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(r);
+        document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 200 }));
+        log('1. 已模拟选中并触发 mouseup');
+
+        let host = null;
+        for (let i = 0; i < 40; i++) {
+          host = document.getElementById('llt-host-9f3b');
+          if (host && host.shadowRoot && host.shadowRoot.querySelector('.bubble:not([hidden])')) break;
+          await sleep(100);
+        }
+        if (!host || !host.shadowRoot) return log('X. 内容脚本未注入（气泡没有出现）');
+
+        const bubble = host.shadowRoot.querySelector('.bubble');
+        log('2. 气泡已出现 hidden=' + bubble.hidden);
+        bubble.click();
+
+        for (let i = 0; i < 60; i++) {
+          const body = host.shadowRoot.querySelector('.bd');
+          if (body && !body.classList.contains('muted') && body.textContent.trim()) {
+            log('3. 译文：' + body.textContent.trim().slice(0, 80));
+            sel.removeAllRanges();
+            return;
+          }
+          await sleep(150);
+        }
+        log('X. 卡片没有拿到译文：' + host.shadowRoot.querySelector('.bd').textContent.trim().slice(0, 120));
+      })();
+    </script>
+  </body>
+</html>

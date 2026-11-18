@@ -1,0 +1,19 @@
+# 依赖 / 构建产物
+node_modules/
+test/out/
+
+# 打包产物（用 GitHub Releases 发布 zip，不入库）
+*.zip
+*.crx
+*.pem
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# 本地临时
+*.log
+__pycache__/

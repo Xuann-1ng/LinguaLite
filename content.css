@@ -1,0 +1,59 @@
+/* 轻译 LinguaLite — 注入页面的译文块样式
+   只作用于 .llt-tr，尽量继承原页面字体与颜色，暗色站点也不会突兀 */
+
+.llt-tr {
+  display: block !important;
+  margin: 0.4em 0 0 0 !important;
+  padding: 0 0 0 8px !important;
+  border-left: 2px solid rgba(31, 111, 235, 0.38) !important;
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  line-height: 1.62 !important;
+  letter-spacing: normal !important;
+  text-align: inherit !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  color: inherit !important;
+  opacity: 0.86 !important;
+  float: none !important;
+  position: static !important;
+  max-width: 100% !important;
+  /* 万一落点仍是弹性 / 网格容器（如竖排卡片），译文也不该被压缩或并排 */
+  flex: 0 0 auto !important;
+  grid-column: 1 / -1 !important;
+  box-sizing: border-box !important;
+}
+
+td > .llt-tr,
+th > .llt-tr {
+  margin-top: 0.3em !important;
+  font-size: 0.95em !important;
+}
+
+/* 标题里的译文缩小一档，避免出现两个同样大的标题 */
+h1 > .llt-tr,
+h2 > .llt-tr,
+h3 > .llt-tr,
+h4 > .llt-tr,
+h5 > .llt-tr,
+h6 > .llt-tr,
+h1 ~ .llt-tr,
+h2 ~ .llt-tr,
+h3 ~ .llt-tr {
+  font-size: 0.66em !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  margin-top: 0.25em !important;
+  border-left-width: 3px !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .llt-tr {
+    border-left-color: rgba(120, 170, 255, 0.45) !important;
+  }
+}
