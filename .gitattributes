@@ -1,3 +1,11 @@
 * text=auto eol=lf
 *.png binary
 *.zip binary
+
+# 打 release 包时排除（git archive 会读这几行）
+.gitignore      export-ignore
+.gitattributes  export-ignore
+docs/           export-ignore
+demo/           export-ignore
+test/           export-ignore
+tools/          export-ignore
