@@ -39,7 +39,7 @@ const BATCH_ITEMS = 20;
 const BATCH_CHARS = 4500;
 
 /** 与 content.js 里的 V 保持一致 */
-const CONTENT_VERSION = '1.4.0';
+const CONTENT_VERSION = '1.4.1';
 
 /* ------------------------------------------------------------------ */
 /* 工具                                                                */

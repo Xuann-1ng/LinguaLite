@@ -17,3 +17,5 @@ desktop.ini
 # 本地临时
 *.log
 __pycache__/
+test/extract.html
+tools/diag_*.js

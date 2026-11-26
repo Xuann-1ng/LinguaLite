@@ -5,7 +5,7 @@
  */
 
 (() => {
-  const V = '1.4.0';
+  const V = '1.4.1';
   // 同版本重复注入直接退出；旧版本残留则接管（清掉旧 UI 重来）
   if (window.__lltVersion === V) return;
   const staleHost = document.getElementById('llt-host-9f3b');
@@ -401,14 +401,23 @@
   }
 
   /**
-   * 视觉上根本看不见的元素：sr-only（只给屏幕阅读器）、opacity:0、被 clip 裁掉的。
+   * 视觉上根本看不见的元素：sr-only（只给屏幕阅读器）、被 clip 裁掉的。
    * 它们照样有文字，但原文看不到，译文插进去就在页面上凭空堆出一片碎片。
+   *
+   * 两条不能伸手的边界（踩过坑）：
+   * 1) display:contents：自己不成盒子、尺寸恒为 0，但里面的段落正常渲染。
+   * 2) 尺寸只对「自己就是文字」的元素判。整块容器可能是 0 高包装层（动画起始态、
+   *    float 包裹层），按尺寸判会把里面所有正文一次丢光。
+   * 3) opacity:0 不参与判断：滚动淡入的站点在首屏外的段落就是 opacity:0，
+   *    判成隐藏的话整页只能翻出眼前这几段。
    */
   function isVisuallyHidden(el) {
     const cs = getComputedStyle(el);
-    if (cs.visibility === 'hidden' || cs.opacity === '0') return true;
+    if (cs.visibility === 'hidden') return true;
+    if (cs.display === 'contents') return false;
     if (cs.clip && cs.clip !== 'auto') return true;
     if (cs.clipPath && cs.clipPath !== 'none' && /inset\(/.test(cs.clipPath)) return true;
+    if (el.children.length) return false;
     const r = el.getBoundingClientRect();
     return r.width <= 1 && r.height <= 1;
   }
@@ -421,7 +430,10 @@
     // 我们自己插入的译文块不算「块级子元素」，否则原文段落会失去段落身份
     if (el.classList && el.classList.contains('llt-tr')) return false;
     const d = getComputedStyle(el).display;
-    if (!d || d === 'none' || d === 'contents') return false;
+    if (!d || d === 'none') return false;
+    // display:contents 是「透明盒子」：自己不成盒子，但里面的内容是正常块级。
+    // 以前当成内联元素跳过，整个正文块就再也走不进扫描，一个字都翻不到。
+    if (d === 'contents') return true;
     return !/^inline($|-)/.test(d);
   }
 
@@ -432,24 +444,55 @@
     'A', 'ABBR', 'TIME', 'SVG', 'IMG', 'BR', 'LABEL', 'CITE', 'Q', 'DFN', 'VAR', 'BDI', 'BDO'
   ]);
 
-  /** 这一行是不是「一行碎片文字」（标签 + 计数 + 时间）：整行当一段来翻 */
+  /**
+   * 这一行是不是「一行碎片文字」（标签 + 计数 + 时间）：整行当一段来翻。
+   * 必须确认真的是「一行」——单列 grid / flex-column 里的段落是一层一层排下去的，
+   * 只看「子项都很矮」会把整篇文章并成一大段（发出去还容易被通道截断）。
+   */
   function isFlattenedRow(el) {
     if (!isRowBox(el)) return false;
-    const kids = [...el.children];
+    const kids = [...el.children].filter((c) => !(c.classList && c.classList.contains('llt-tr')));
     if (!kids.length) return false;
+    const heights = kids.map((c) => c.getBoundingClientRect().height);
     // 子项都是「一行高」的小格子：GitHub 文件列表的提交行就是
     // 头像组 + 提交信息 + 短哈希 + 时间 + 提交数，各翻一条会碎成一堆
-    return kids.every((c) => TEXTISH.has(c.tagName) || c.getBoundingClientRect().height <= 48);
+    if (!kids.every((c, i) => TEXTISH.has(c.tagName) || heights[i] <= 48)) return false;
+    // 容器只有一行高，说明子项是并排的；容器高出一大截说明是竖着叠的，不能并
+    const box = el.getBoundingClientRect();
+    const tallest = heights.reduce((m, h) => Math.max(m, h), 0);
+    return box.height <= Math.max(tallest, 24) * 1.6 + 8;
   }
 
   /** 取段落文本：排除已插入的译文，避免把中文再翻一遍 */
   function unitText(el) {
+    // display:contents 没有盒子，innerText 不可靠，而且块级子节点会被粘成一句
+    // （<p>a</p><p>b</p> → "ab"），这里逐个子节点取文再用空格接上
+    if (getComputedStyle(el).display === 'contents') {
+      const clone = el.cloneNode(true);
+      clone.querySelectorAll('.llt-tr').forEach((n) => n.remove());
+      const parts = [];
+      clone.childNodes.forEach((n) => {
+        const t = (n.textContent || '').replace(/\s+/g, ' ').trim();
+        if (t) parts.push(t);
+      });
+      return parts.join(' ').trim();
+    }
     if (!el.querySelector('.llt-tr')) {
       return (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
     }
     const clone = el.cloneNode(true);
     clone.querySelectorAll('.llt-tr').forEach((n) => n.remove());
     return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  /** 元素在页面上是否真的占位置（display:contents 自己没有盒子，看父级有没有排版） */
+  function hasBox(el) {
+    if (el.getClientRects().length) return true;
+    if (getComputedStyle(el).display === 'contents') {
+      const p = el.parentElement;
+      return !!(p && p.getClientRects().length);
+    }
+    return false;
   }
 
   /** 从任意节点往外找最近的「块级」祖先（段落级别） */
@@ -473,6 +516,12 @@
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden') return;
       if (isVisuallyHidden(el)) return;
+      // 透明盒子（display:contents）：自己没有盒子，里面的段落是正常块级，
+      // 必须往里走；直接当内联元素跳过会把整块正文丢掉
+      if (cs.display === 'contents' && el !== root && el.children.length) {
+        for (const c of el.children) scan(c);
+        return;
+      }
       if (el.tagName !== 'BODY' && !isBlock(el)) {
         // 内联容器：交给父级块处理；若它本身是扫描根，则往下找
         if (el === root) for (const c of el.children) scan(c);
@@ -492,7 +541,7 @@
         return;
       }
       if (el.tagName === 'BODY') return;
-      if (!el.getClientRects().length) return;
+      if (!hasBox(el)) return;
       const text = unitText(el);
       if (text.length < 2 || !HAS_WORD.test(text)) return;
       units.push({ el, text });
@@ -503,6 +552,13 @@
 
   function collectUnits() {
     return scanBlocks(document.body).filter((u) => u.el.dataset.lltDone !== '1');
+  }
+
+  // 调试出口（tools/diag_extract.js 用；正式功能不依赖它）
+  try {
+    window.__lltDebug = { collect: collectUnits, scan: scanBlocks, isBlock, isVisuallyHidden, isUiChrome };
+  } catch (e) {
+    /* 忽略 */
   }
 
   /** 只取与当前选区相交的段落 */
@@ -548,6 +604,32 @@
     return !isRowBox(el);
   }
 
+  /** 网格列数（computed 值是逐条轨道列出的，如 "760px" / "380px 380px"） */
+  function gridColumns(el) {
+    const tpl = (getComputedStyle(el).gridTemplateColumns || '').trim();
+    if (!tpl || tpl === 'none') return 1;
+    return tpl.split(/\s+/).filter(Boolean).length;
+  }
+
+  /**
+   * 这个容器能不能「竖着」接纳一个新的块——也就是译文插进去会不会把原文挤歪。
+   * 文档流 / 单列网格 / flex-column 都是竖着排的，插进去就落在原文下方。
+   * 横排行（flex-row、多列网格）不行；display:contents 自己没有盒子，
+   * 要往上看到它的父级是不是竖着排。
+   */
+  function isStackingParent(el, depth) {
+    if (!el || el === document.documentElement || (depth || 0) > 6) return false;
+    const cs = getComputedStyle(el);
+    const d = cs.display;
+    if (d === 'contents') {
+      const gp = el.parentElement;
+      return !gp || gp === document.body || isFlowBox(gp) || isStackingParent(gp, (depth || 0) + 1);
+    }
+    if (/^(inline-)?grid$/.test(d)) return gridColumns(el) === 1;
+    if (/^(inline-)?flex$/.test(d)) return cs.flexDirection === 'column';
+    return isFlowBox(el);
+  }
+
   /** 矮的固定高度盒子（计数胶囊、徽标、图标按钮）：撑不开，译文塞进去就溢出来 */
   function isTightBox(el) {
     if (/^(TD|TH)$/.test(el.tagName)) return false;
@@ -571,17 +653,17 @@
     // 1) 原文自己就能装块级内容 → 塞进去（段落、列表项、表格单元格都走这里，和以前一致）
     if (!clipped && isFlowBox(el) && !isTightBox(el) && !/^(TD|TH)$/.test(el.tagName)) {
       const p = el.parentElement;
-      if (!p || isFlowBox(p) || p === document.body) return { host: el, after: null };
+      if (!p || isStackingParent(p) || p === document.body) return { host: el, after: null };
     }
     if (/^(TD|TH)$/.test(el.tagName)) return { host: el, after: null };
 
-    // 2) 否则插到原文后面：往外找能容纳块级内容的父级
+    // 2) 否则插到原文后面：往外找能竖着接纳块级内容的父级
     let cur = el;
     for (let i = 0; i < 10 && cur; i++) {
       const p = cur.parentElement;
       if (!p || p === document.documentElement) break;
       if (/^(TD|TH)$/.test(cur.tagName)) return { host: cur, after: null };
-      if (isFlowBox(p) || p === document.body) return { host: p, after: cur };
+      if (isStackingParent(p) || p === document.body) return { host: p, after: cur };
       cur = p;
     }
     return { host: el.parentNode || el, after: null };
@@ -741,6 +823,8 @@
   try {
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!msg) return;
+      // 已被新版本接管：旧实例闭嘴，免得两个实例同时响应同一条指令
+      if (window.__lltVersion !== V) return;
       if (msg.type === 'togglePage') {
         togglePage()
           .then((r) => sendResponse(Object.assign({ ok: true }, r)))
